@@ -52,4 +52,20 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Group::class, 'user_groups')->withTimestamps();
     }
+
+    /**
+     * Get the user's cart.
+     */
+    public function cart()
+    {
+        return $this->hasOne(Cart::class);
+    }
+
+    /**
+     * Get the user's orders.
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 }
