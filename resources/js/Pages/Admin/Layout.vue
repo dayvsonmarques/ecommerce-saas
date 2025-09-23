@@ -49,6 +49,11 @@
                       <span>Pedidos</span>
                     </Link>
                   </li>
+                  <li>
+                    <Link :href="route('admin.reservations.index')" :class="navClass(currentUrl.startsWith('/admin/reservations'))" @click="sidebarOpen = false">
+                      <span>Reservas</span>
+                    </Link>
+                  </li>
                   <li class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                     <span class="px-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Usuários</span>
                   </li>
@@ -103,6 +108,11 @@
               <li>
                 <Link :href="route('admin.orders.index')" :class="navClass(currentUrl.startsWith('/admin/orders'))">
                   <span>Pedidos</span>
+                </Link>
+              </li>
+              <li>
+                <Link :href="route('admin.reservations.index')" :class="navClass(currentUrl.startsWith('/admin/reservations'))">
+                  <span>Reservas</span>
                 </Link>
               </li>
               <li class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
