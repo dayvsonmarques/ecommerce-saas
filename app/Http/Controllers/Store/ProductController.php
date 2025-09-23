@@ -21,6 +21,12 @@ class ProductController extends Controller
             ->when($request->input('category'), function ($query, $category) {
                 $query->where('category_id', $category);
             })
+            ->when($request->input('min_price'), function ($query, $minPrice) {
+                $query->where('price', '>=', $minPrice);
+            })
+            ->when($request->input('max_price'), function ($query, $maxPrice) {
+                $query->where('price', '<=', $maxPrice);
+            })
             ->when($request->input('sort'), function ($query, $sort) {
                 switch ($sort) {
                     case 'price_asc':
@@ -46,10 +52,16 @@ class ProductController extends Controller
 
         $categories = Category::where('is_active', true)->get();
 
+        // Get price range for filter display
+        $priceRange = Product::where('is_active', true)
+            ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
+            ->first();
+
         return Inertia::render('Store/Products/Index', [
             'products' => $products,
             'categories' => $categories,
-            'filters' => $request->only(['search', 'category', 'sort']),
+            'filters' => $request->only(['search', 'category', 'sort', 'min_price', 'max_price']),
+            'priceRange' => $priceRange,
         ]);
     }
 

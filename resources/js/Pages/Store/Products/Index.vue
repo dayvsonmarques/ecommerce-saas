@@ -9,7 +9,7 @@
 
       <!-- Filters -->
       <div class="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <form @submit.prevent="applyFilters" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form @submit.prevent="applyFilters" class="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Buscar</label>
             <input 
@@ -46,16 +46,43 @@
               <option value="price_desc">Maior preço</option>
             </select>
           </div>
+
+          <div>
+            <PriceRangeSlider
+              :min="priceRange?.min_price || 0"
+              :max="priceRange?.max_price || 1000"
+              :step="0.01"
+              v-model="priceRangeValue"
+              @update:modelValue="updatePriceRange"
+            />
+          </div>
           
-          <div class="flex items-end">
+          <div class="flex items-end space-x-2">
             <button 
               type="submit" 
-              class="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               Filtrar
             </button>
+            <button 
+              type="button"
+              @click="clearFilters"
+              class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            >
+              Limpar
+            </button>
           </div>
         </form>
+        
+        <!-- Price Range Info -->
+        <div v-if="priceRange" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Faixa de preços disponível: 
+            <span class="font-medium text-indigo-600 dark:text-indigo-400">
+              R$ {{ formatPrice(priceRange.min_price) }} - R$ {{ formatPrice(priceRange.max_price) }}
+            </span>
+          </p>
+        </div>
       </div>
 
       <!-- Products Grid -->
@@ -167,19 +194,37 @@
 import { Link, router } from '@inertiajs/vue3'
 import { ref, reactive } from 'vue'
 import StoreLayout from '../Layout.vue'
+import PriceRangeSlider from '../../../Components/PriceRangeSlider.vue'
 import { route } from 'ziggy-js'
 
 const props = defineProps({
   products: Object,
   categories: Array,
   filters: Object,
+  priceRange: Object,
 })
 
 const filters = reactive({
   search: props.filters?.search || '',
   category: props.filters?.category || '',
   sort: props.filters?.sort || '',
+  min_price: props.filters?.min_price || '',
+  max_price: props.filters?.max_price || '',
 })
+
+// Price range slider value - initialize with actual product price range
+const priceRangeValue = ref({
+  min: props.filters?.min_price || props.priceRange?.min_price || 0,
+  max: props.filters?.max_price || props.priceRange?.max_price || 1000,
+})
+
+// Initialize slider with actual product price range if no filters are applied
+if (!props.filters?.min_price && !props.filters?.max_price && props.priceRange) {
+  priceRangeValue.value = {
+    min: props.priceRange.min_price,
+    max: props.priceRange.max_price,
+  }
+}
 
 const applyFilters = () => {
   router.visit(route('store.products.index'), {
@@ -189,7 +234,35 @@ const applyFilters = () => {
   })
 }
 
+const updatePriceRange = (value) => {
+  filters.min_price = value.min
+  filters.max_price = value.max
+}
+
+const clearFilters = () => {
+  filters.search = ''
+  filters.category = ''
+  filters.sort = ''
+  filters.min_price = ''
+  filters.max_price = ''
+  
+  // Reset price range slider to full product range
+  priceRangeValue.value = {
+    min: props.priceRange?.min_price || 0,
+    max: props.priceRange?.max_price || 1000,
+  }
+  
+  router.visit(route('store.products.index'), {
+    data: {},
+    preserveState: true,
+    replace: true,
+  })
+}
+
 const addToCart = async (productId) => {
+  // Show loading spinner
+  window.dispatchEvent(new CustomEvent('show-loading'))
+  
   try {
     const response = await fetch(route('store.cart.add'), {
       method: 'POST',
@@ -220,6 +293,9 @@ const addToCart = async (productId) => {
   } catch (error) {
     console.error('Error adding to cart:', error);
     alert('Erro ao adicionar produto ao carrinho');
+  } finally {
+    // Hide loading spinner
+    window.dispatchEvent(new CustomEvent('hide-loading'))
   }
 }
 

@@ -174,6 +174,9 @@ const decreaseQuantity = () => {
 }
 
 const addToCart = async () => {
+  // Show loading spinner
+  window.dispatchEvent(new CustomEvent('show-loading'))
+  
   try {
     const response = await fetch(route('store.cart.add'), {
       method: 'POST',
@@ -204,6 +207,9 @@ const addToCart = async () => {
   } catch (error) {
     console.error('Error adding to cart:', error);
     alert('Erro ao adicionar produto ao carrinho');
+  } finally {
+    // Hide loading spinner
+    window.dispatchEvent(new CustomEvent('hide-loading'))
   }
 }
 
