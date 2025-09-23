@@ -87,6 +87,7 @@
 
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
 import StoreLayout from '../Layout.vue'
 
 const props = defineProps({

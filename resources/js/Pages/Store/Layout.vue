@@ -40,12 +40,12 @@
             </div>
 
             <!-- Cart -->
-            <Link :href="route('store.cart.index')" class="relative p-2 text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400">
+            <Link :href="route('store.cart.index')" class="relative p-2 text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors duration-200">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
               </svg>
-              <span v-if="cartItemsCount > 0" class="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {{ cartItemsCount }}
+              <span v-if="cartItemsCount > 0" class="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium animate-pulse">
+                {{ cartItemsCount > 99 ? '99+' : cartItemsCount }}
               </span>
             </Link>
 
@@ -148,23 +148,23 @@
 </template>
 
 <script setup>
-import { Link, router } from '@inertiajs/vue3'
+import { Link, router, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted } from 'vue'
+import { route } from 'ziggy-js'
 
 const mobileMenuOpen = ref(false)
 const userMenuOpen = ref(false)
 const searchQuery = ref('')
 
+const page = usePage()
 const userInitials = computed(() => {
-  const name = $page.props.auth?.user?.name || ''
+  const name = page.props.auth?.user?.name || ''
   const parts = name.split(' ').filter(Boolean)
   return (parts[0]?.[0] || 'U').toUpperCase() + (parts[1]?.[0] || '').toUpperCase()
 })
 
-const cartItemsCount = computed(() => {
-  // This would be populated from a global state or API call
-  return 0
-})
+const cartItemsCount = ref(0)
+const cartTotal = ref(0)
 
 const performSearch = () => {
   if (searchQuery.value.trim()) {
@@ -172,8 +172,28 @@ const performSearch = () => {
   }
 }
 
+const fetchCartInfo = async () => {
+  try {
+    const response = await fetch(route('store.cart.info'))
+    const data = await response.json()
+    cartItemsCount.value = data.items_count || 0
+    cartTotal.value = data.total_amount || 0
+  } catch (error) {
+    console.error('Error fetching cart info:', error)
+  }
+}
+
 // Close menus when clicking outside
 onMounted(() => {
+  // Fetch initial cart info
+  fetchCartInfo()
+  
+  // Listen for cart updates
+  window.addEventListener('cart-updated', (event) => {
+    cartItemsCount.value = event.detail.items_count || 0
+    cartTotal.value = event.detail.total_amount || 0
+  })
+  
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.relative')) {
       userMenuOpen.value = false

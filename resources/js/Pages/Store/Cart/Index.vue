@@ -147,6 +147,7 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3'
 import StoreLayout from '../Layout.vue'
+import { route } from 'ziggy-js'
 
 const props = defineProps({
   cart: Object,

@@ -54,6 +54,7 @@ Route::prefix('store')->name('store.')->group(function () {
     Route::put('/cart/items/{cartItem}', [App\Http\Controllers\Store\CartController::class, 'update'])->name('cart.update');
     Route::delete('/cart/items/{cartItem}', [App\Http\Controllers\Store\CartController::class, 'remove'])->name('cart.remove');
     Route::delete('/cart/clear', [App\Http\Controllers\Store\CartController::class, 'clear'])->name('cart.clear');
+    Route::get('/cart/info', [App\Http\Controllers\Store\CartController::class, 'info'])->name('cart.info');
     
     Route::get('/checkout', [App\Http\Controllers\Store\CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [App\Http\Controllers\Store\CheckoutController::class, 'store'])->name('checkout.store');

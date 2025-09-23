@@ -158,6 +158,7 @@
 import { Link, router } from '@inertiajs/vue3'
 import { ref } from 'vue'
 import StoreLayout from '../Layout.vue'
+import { route } from 'ziggy-js'
 
 const props = defineProps({
   product: Object,
@@ -178,16 +179,38 @@ const decreaseQuantity = () => {
   }
 }
 
-const addToCart = () => {
-  router.post(route('store.cart.add'), {
-    product_id: props.product.id,
-    quantity: quantity.value,
-  }, {
-    preserveState: true,
-    onSuccess: () => {
+const addToCart = async () => {
+  try {
+    const response = await fetch(route('store.cart.add'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        product_id: props.product.id,
+        quantity: quantity.value,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Emit event to update cart count in header
+      window.dispatchEvent(new CustomEvent('cart-updated', {
+        detail: data.cart
+      }));
+      
       // Show success message
+      alert(data.message);
+    } else {
+      alert(data.error || 'Erro ao adicionar produto ao carrinho');
     }
-  })
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    alert('Erro ao adicionar produto ao carrinho');
+  }
 }
 
 const formatPrice = (price) => {

@@ -33,7 +33,7 @@ class CartController extends Controller
         $product = Product::findOrFail($request->product_id);
         
         if (!$product->is_active) {
-            return redirect()->back()->with('error', 'Produto não disponível.');
+            return response()->json(['error' => 'Produto não disponível.'], 400);
         }
 
         $cart = $this->getOrCreateCart();
@@ -54,6 +54,18 @@ class CartController extends Controller
         }
 
         $this->updateCartTotal($cart);
+        $cart->load('items');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Produto adicionado ao carrinho!',
+                'cart' => [
+                    'items_count' => $cart->items->sum('quantity'),
+                    'total_amount' => $cart->total_amount,
+                ]
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Produto adicionado ao carrinho!');
     }
@@ -90,6 +102,17 @@ class CartController extends Controller
         $cart->update(['total_amount' => 0]);
 
         return redirect()->back()->with('success', 'Carrinho limpo!');
+    }
+
+    public function info()
+    {
+        $cart = $this->getOrCreateCart();
+        $cart->load('items');
+
+        return response()->json([
+            'items_count' => $cart->items->sum('quantity'),
+            'total_amount' => $cart->total_amount,
+        ]);
     }
 
     private function getOrCreateCart()
