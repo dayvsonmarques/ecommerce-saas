@@ -59,7 +59,7 @@ class ProductController extends Controller
             abort(404);
         }
 
-        $product->load('category');
+        $product->load(['category', 'images']);
         
         // Get related products from the same category
         $relatedProducts = Product::where('category_id', $product->category_id)

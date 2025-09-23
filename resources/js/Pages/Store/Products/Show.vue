@@ -16,16 +16,9 @@
       </nav>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Product Image -->
+        <!-- Product Image Gallery -->
         <div class="space-y-4">
-          <div class="aspect-w-16 aspect-h-12 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
-            <img 
-              :src="product.image || `https://picsum.photos/600/600?random=${product.id}`" 
-              :alt="product.name"
-              class="w-full h-96 object-cover"
-              @error="handleImageError"
-            />
-          </div>
+          <ProductImageGallery :images="product.images" />
         </div>
 
         <!-- Product Info -->
@@ -158,6 +151,7 @@
 import { Link, router } from '@inertiajs/vue3'
 import { ref } from 'vue'
 import StoreLayout from '../Layout.vue'
+import ProductImageGallery from '../../../Components/ProductImageGallery.vue'
 import { route } from 'ziggy-js'
 
 const props = defineProps({
