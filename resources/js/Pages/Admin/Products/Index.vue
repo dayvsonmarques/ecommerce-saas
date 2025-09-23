@@ -19,6 +19,33 @@
         </div>
       </div>
 
+      <!-- Filters -->
+      <form @submit.prevent="submitFilters" class="bg-white shadow sm:rounded-md p-4 grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="sm:col-span-2">
+          <label for="f-name" class="block text-sm font-medium text-gray-700">Nome</label>
+          <input id="f-name" v-model="form.name" type="text" placeholder="Buscar por nome" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+        </div>
+        <div>
+          <label for="f-category" class="block text-sm font-medium text-gray-700">Categoria</label>
+          <select id="f-category" v-model="form.category_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+            <option value="">Todas</option>
+            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-status" class="block text-sm font-medium text-gray-700">Status</label>
+          <select id="f-status" v-model="form.is_active" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+            <option value="">Todos</option>
+            <option value="1">Ativo</option>
+            <option value="0">Inativo</option>
+          </select>
+        </div>
+        <div class="sm:col-span-4 flex items-center gap-3">
+          <button type="submit" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">Filtrar</button>
+          <button type="button" @click="resetFilters" class="inline-flex items-center rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">Limpar</button>
+        </div>
+      </form>
+
       <!-- Products Table -->
       <div class="bg-white shadow overflow-hidden sm:rounded-md">
         <ul class="divide-y divide-gray-200">
@@ -53,24 +80,27 @@
                       :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
                   {{ product.is_active ? 'Ativo' : 'Inativo' }}
                 </span>
-                <div class="flex space-x-2">
-                  <Link
-                    :href="route('admin.products.show', product.id)"
-                    class="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
-                  >
-                    Ver
-                  </Link>
+                <div class="flex items-center gap-2">
                   <button
-                    @click="editProduct(product.id)"
-                    class="text-indigo-600 hover:text-indigo-900 text-sm font-medium bg-transparent border-0 cursor-pointer"
+                    :title="'Ver'"
+                    @click="router.visit(route('admin.products.show', product.id))"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded hover:bg-gray-100 text-indigo-600"
                   >
-                    Editar
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7Zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10Z"/></svg>
                   </button>
                   <button
-                    @click="deleteProduct(product.id)"
-                    class="text-red-600 hover:text-red-900 text-sm font-medium"
+                    :title="'Editar'"
+                    @click="editProduct(product.id)"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded hover:bg-gray-100 text-indigo-600"
                   >
-                    Excluir
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm15.71-9.04a1 1 0 0 0 0-1.41l-1.51-1.51a1 1 0 0 0-1.41 0l-1.13 1.13 3.75 3.75 1.3-1.46Z"/></svg>
+                  </button>
+                  <button
+                    :title="'Excluir'"
+                    @click="deleteProduct(product.id)"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded hover:bg-gray-100 text-red-600"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5"><path d="M6 7h12v2H6V7Zm2 3h8l-1 10H9L8 10Zm3-7h2v2h-2V3Z"/></svg>
                   </button>
                 </div>
               </div>
@@ -131,11 +161,35 @@
 
 <script setup>
 import { Link, router } from '@inertiajs/vue3'
+import { reactive } from 'vue'
 import AdminLayout from '../Layout.vue'
 
-defineProps({
-  products: Object
+const props = defineProps({
+  products: Object,
+  categories: Array,
+  filters: Object,
 })
+
+const form = reactive({
+  name: props.filters?.name || '',
+  category_id: props.filters?.category_id || '',
+  is_active: props.filters?.is_active ?? '',
+})
+
+const submitFilters = () => {
+  router.get(route('admin.products.index'), {
+    name: form.name || undefined,
+    category_id: form.category_id || undefined,
+    is_active: form.is_active !== '' ? form.is_active : undefined,
+  }, { preserveState: true, replace: true })
+}
+
+const resetFilters = () => {
+  form.name = ''
+  form.category_id = ''
+  form.is_active = ''
+  submitFilters()
+}
 
 const placeholder = (product) => `https://picsum.photos/seed/product-${product.id || encodeURIComponent(product.name)}/160/160`
 const productImage = (product) => product?.image || placeholder(product)

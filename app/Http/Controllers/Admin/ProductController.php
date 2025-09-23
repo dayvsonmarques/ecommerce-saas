@@ -13,12 +13,34 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category')->paginate(10);
+        $filters = $request->only(['name', 'category_id', 'is_active']);
+
+        $query = Product::with('category');
+
+        if (($filters['name'] ?? '') !== '') {
+            $query->where('name', 'like', '%' . $filters['name'] . '%');
+        }
+        if (($filters['category_id'] ?? '') !== '') {
+            $query->where('category_id', $filters['category_id']);
+        }
+        $isActive = $filters['is_active'] ?? null;
+        if ($isActive !== null && $isActive !== '') {
+            $query->where('is_active', (bool) $isActive);
+        }
+
+        $products = $query->paginate(20)->withQueryString();
+        $categories = Category::select('id', 'name')->orderBy('name')->get();
         
         return Inertia::render('Admin/Products/Index', [
-            'products' => $products
+            'products' => $products,
+            'categories' => $categories,
+            'filters' => [
+                'name' => $filters['name'] ?? '',
+                'category_id' => $filters['category_id'] ?? '',
+                'is_active' => $filters['is_active'] ?? '',
+            ],
         ]);
     }
 
