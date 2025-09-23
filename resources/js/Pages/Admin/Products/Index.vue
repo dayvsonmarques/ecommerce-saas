@@ -25,8 +25,14 @@
           <li v-for="product in products.data" :key="product.id">
             <div class="px-4 py-4 flex items-center justify-between">
               <div class="flex items-center">
-                <div class="flex-shrink-0 h-10 w-10">
-                  <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <div class="flex-shrink-0 h-16 w-16">
+                  <img 
+                    v-if="product.image" 
+                    :src="product.image" 
+                    :alt="product.name"
+                    class="h-16 w-16 rounded-lg object-cover"
+                  />
+                  <div v-else class="h-16 w-16 rounded-lg bg-gray-200 flex items-center justify-center">
                     <span class="text-sm font-medium text-gray-600">{{ product.name.charAt(0) }}</span>
                   </div>
                 </div>

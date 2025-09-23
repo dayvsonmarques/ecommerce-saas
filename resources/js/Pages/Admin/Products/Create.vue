@@ -52,6 +52,27 @@
                 </p>
               </div>
 
+              <div class="sm:col-span-2">
+                <label for="image" class="block text-sm font-medium text-gray-700">
+                  URL da Imagem
+                </label>
+                <input
+                  type="url"
+                  name="image"
+                  id="image"
+                  v-model="form.image"
+                  placeholder="https://exemplo.com/imagem.jpg"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  :class="{ 'border-red-300': form.errors.image }"
+                />
+                <p v-if="form.errors.image" class="mt-2 text-sm text-red-600">
+                  {{ form.errors.image }}
+                </p>
+                <p class="mt-1 text-sm text-gray-500">
+                  Cole a URL da imagem do produto
+                </p>
+              </div>
+
               <div>
                 <label for="price" class="block text-sm font-medium text-gray-700">
                   Preço
@@ -155,6 +176,7 @@ const props = defineProps({
 const form = useForm({
   name: '',
   description: '',
+  image: '',
   price: '',
   stock: '',
   category_id: '',
