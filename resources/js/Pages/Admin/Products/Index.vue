@@ -26,11 +26,12 @@
             <div class="px-4 py-4 flex items-center justify-between">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-16 w-16">
-                  <img 
-                    v-if="product.image" 
-                    :src="product.image" 
+                  <img
+                    v-if="productImage(product)"
+                    :src="productImage(product)"
                     :alt="product.name"
                     class="h-16 w-16 rounded-lg object-cover"
+                    @error="onImgError($event, product)"
                   />
                   <div v-else class="h-16 w-16 rounded-lg bg-gray-200 flex items-center justify-center">
                     <span class="text-sm font-medium text-gray-600">{{ product.name.charAt(0) }}</span>
@@ -59,12 +60,12 @@
                   >
                     Ver
                   </Link>
-                  <Link
-                    :href="route('admin.products.edit', product.id)"
-                    class="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                  <button
+                    @click="editProduct(product.id)"
+                    class="text-indigo-600 hover:text-indigo-900 text-sm font-medium bg-transparent border-0 cursor-pointer"
                   >
                     Editar
-                  </Link>
+                  </button>
                   <button
                     @click="deleteProduct(product.id)"
                     class="text-red-600 hover:text-red-900 text-sm font-medium"
@@ -135,6 +136,21 @@ import AdminLayout from '../Layout.vue'
 defineProps({
   products: Object
 })
+
+const placeholder = (product) => `https://picsum.photos/seed/product-${product.id || encodeURIComponent(product.name)}/160/160`
+const productImage = (product) => product?.image || placeholder(product)
+const onImgError = (e, product) => {
+  if (!e?.target) return
+  const current = e.target.getAttribute('src')
+  const fallback = placeholder(product)
+  if (current !== fallback) {
+    e.target.setAttribute('src', fallback)
+  }
+}
+
+const editProduct = (id) => {
+  router.visit(route('admin.products.edit', id))
+}
 
 const deleteProduct = (id) => {
   if (confirm('Tem certeza que deseja excluir este produto?')) {
