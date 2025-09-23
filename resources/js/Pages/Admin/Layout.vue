@@ -143,7 +143,7 @@
                 </Link>
               </div>
 
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3 relative">
                 <!-- Dark mode toggle -->
                 <button @click="darkMode = !darkMode" class="inline-flex items-center justify-center h-9 w-9 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
                   <span class="sr-only">Alternar tema</span>
@@ -151,13 +151,24 @@
                   <svg v-else class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
                 </button>
 
-                <Link :href="route('dashboard')" class="hidden sm:inline-flex items-center rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
-                  Voltar ao Painel
-                </Link>
-
-                <Link :href="route('logout')" method="post" as="button" class="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700">
-                  Sair
-                </Link>
+                <!-- User dropdown -->
+                <div class="relative">
+                  <button @click="userMenuOpen = !userMenuOpen" class="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white text-sm font-semibold">
+                      {{ userInitials }}
+                    </span>
+                    <span class="hidden sm:flex flex-col text-left leading-tight">
+                      <span class="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[10rem]">{{ currentUser?.name || 'Usuário' }}</span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[10rem]">{{ currentUser?.email }}</span>
+                    </span>
+                  </button>
+                  <div v-if="userMenuOpen" class="absolute right-0 mt-2 w-48 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 z-40">
+                    <div class="py-1">
+                      <Link :href="route('profile.edit')" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">Editar perfil</Link>
+                      <Link :href="route('logout')" method="post" as="button" class="w-full text-left block px-3 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">Sair</Link>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -177,8 +188,15 @@ import { ref, onMounted, watch, computed } from 'vue'
 
 const sidebarOpen = ref(false)
 const darkMode = ref(false)
+const userMenuOpen = ref(false)
 
 const currentUrl = computed(() => usePage().url || '')
+const currentUser = computed(() => usePage()?.props?.auth?.user || null)
+const userInitials = computed(() => {
+  const n = currentUser?.value?.name || ''
+  const parts = n.split(' ').filter(Boolean)
+  return (parts[0]?.[0] || 'U').toUpperCase() + (parts[1]?.[0] || '').toUpperCase()
+})
 const navClass = (active) => [
   active ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-600/20 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-700',
   'group flex gap-x-3 rounded-md p-2 text-sm font-medium items-center'
