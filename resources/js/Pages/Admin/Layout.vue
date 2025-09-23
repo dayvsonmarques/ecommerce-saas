@@ -49,6 +49,19 @@
                       <span>Pedidos</span>
                     </Link>
                   </li>
+                  <li class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span class="px-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Usuários</span>
+                  </li>
+                  <li>
+                    <Link :href="route('admin.users.index')" :class="navClass(currentUrl.startsWith('/admin/users'))" @click="sidebarOpen = false">
+                      <span>Usuarios</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link :href="route('admin.groups.index')" :class="navClass(currentUrl.startsWith('/admin/groups'))" @click="sidebarOpen = false">
+                      <span>Grupos de usuários</span>
+                    </Link>
+                  </li>
                 </ul>
               </nav>
             </div>
@@ -90,6 +103,19 @@
               <li>
                 <Link :href="route('admin.orders.index')" :class="navClass(currentUrl.startsWith('/admin/orders'))">
                   <span>Pedidos</span>
+                </Link>
+              </li>
+              <li class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <span class="px-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Usuários</span>
+              </li>
+              <li>
+                <Link :href="route('admin.users.index')" :class="navClass(currentUrl.startsWith('/admin/users'))">
+                  <span>Usuarios</span>
+                </Link>
+              </li>
+              <li>
+                <Link :href="route('admin.groups.index')" :class="navClass(currentUrl.startsWith('/admin/groups'))">
+                  <span>Grupos de usuários</span>
                 </Link>
               </li>
             </ul>
