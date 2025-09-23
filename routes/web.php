@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\GroupController;
 use App\Http\Controllers\Admin\UserGroupController;
 use App\Http\Controllers\Admin\ReservationController;
+use App\Http\Controllers\Admin\MenuController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -45,6 +46,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
     Route::resource('groups', GroupController::class);
     Route::resource('user-groups', UserGroupController::class);
     Route::resource('reservations', ReservationController::class);
+    Route::resource('menus', MenuController::class);
 });
 
 require __DIR__.'/auth.php';

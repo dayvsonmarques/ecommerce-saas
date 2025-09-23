@@ -50,6 +50,11 @@
                     </Link>
                   </li>
                   <li>
+                    <Link :href="route('admin.menus.index')" :class="navClass(currentUrl.startsWith('/admin/menus'))" @click="sidebarOpen = false">
+                      <span>Cardápios</span>
+                    </Link>
+                  </li>
+                  <li>
                     <Link :href="route('admin.reservations.index')" :class="navClass(currentUrl.startsWith('/admin/reservations'))" @click="sidebarOpen = false">
                       <span>Reservas</span>
                     </Link>
@@ -108,6 +113,11 @@
               <li>
                 <Link :href="route('admin.orders.index')" :class="navClass(currentUrl.startsWith('/admin/orders'))">
                   <span>Pedidos</span>
+                </Link>
+              </li>
+              <li>
+                <Link :href="route('admin.menus.index')" :class="navClass(currentUrl.startsWith('/admin/menus'))">
+                  <span>Cardápios</span>
                 </Link>
               </li>
               <li>
