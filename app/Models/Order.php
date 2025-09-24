@@ -23,6 +23,8 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'shipping_address' => 'array',
         'billing_address' => 'array',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function customer(): BelongsTo

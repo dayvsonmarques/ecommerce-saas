@@ -14,7 +14,7 @@ class OrderController extends Controller
      */
     public function index()
     {
-        $orders = Order::with(['customer', 'orderItems.product'])->paginate(10);
+        $orders = Order::with(['customer', 'items.product'])->paginate(10);
         
         return Inertia::render('Admin/Orders/Index', [
             'orders' => $orders
@@ -51,7 +51,7 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        $order->load(['customer', 'orderItems.product', 'address']);
+        $order->load(['customer', 'items.product']);
         
         return Inertia::render('Admin/Orders/Show', [
             'order' => $order
@@ -63,7 +63,7 @@ class OrderController extends Controller
      */
     public function edit(Order $order)
     {
-        $order->load(['customer', 'orderItems.product']);
+        $order->load(['customer', 'items.product']);
         
         return Inertia::render('Admin/Orders/Edit', [
             'order' => $order
@@ -78,6 +78,8 @@ class OrderController extends Controller
         $validated = $request->validate([
             'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled',
             'total_amount' => 'required|numeric|min:0',
+            'payment_method' => 'nullable|string|in:credit_card,debit_card,pix,boleto',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
         $order->update($validated);

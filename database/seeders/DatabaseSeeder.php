@@ -28,6 +28,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             GroupSeeder::class,
             ClothingSeeder::class,
+            UpdateProductImagesSeeder::class,
+            ProductImagesSeeder::class,
+            OrdersSeeder::class,
         ]);
 
         // Vincular admin ao grupo Admin, se existir
