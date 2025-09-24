@@ -145,7 +145,7 @@
 
           <!-- Shipping Calculator -->
           <ShippingCalculator 
-            :items="cartItems" 
+            :cart-items="cartItems" 
             @frete-selecionado="onFreteSelecionado"
           />
 

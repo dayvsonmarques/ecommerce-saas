@@ -42,6 +42,12 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
     Route::resource('user-groups', UserGroupController::class);
     Route::resource('reservations', ReservationController::class);
     Route::resource('menus', MenuController::class);
+
+    // Settings
+    Route::get('/settings/correios', [\App\Http\Controllers\Admin\SettingController::class, 'correios'])->name('settings.correios');
+    Route::post('/settings/correios', [\App\Http\Controllers\Admin\SettingController::class, 'updateCorreios'])->name('settings.correios.update');
+    Route::get('/settings/mercadopago', [\App\Http\Controllers\Admin\SettingController::class, 'mercadopago'])->name('settings.mercadopago');
+    Route::post('/settings/mercadopago', [\App\Http\Controllers\Admin\SettingController::class, 'updateMercadoPago'])->name('settings.mercadopago.update');
 });
 
 // Store Routes (Public E-commerce)

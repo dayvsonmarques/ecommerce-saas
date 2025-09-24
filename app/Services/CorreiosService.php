@@ -10,44 +10,146 @@ class CorreiosService
     private $baseUrl = 'https://ws.correios.com.br/calculador/CalcPrecoPrazo.aspx';
     private $codigoEmpresa;
     private $senha;
+    private $cepOrigem;
 
     public function __construct()
     {
         $this->codigoEmpresa = config('services.correios.codigo_empresa');
         $this->senha = config('services.correios.senha');
+        $this->cepOrigem = config('services.correios.cep_origem', '01310-100');
     }
 
     /**
-     * Calcula o frete para um pedido
+     * Calcula o frete para um carrinho de produtos
      */
-    public function calcularFrete(array $dados)
+    public function calcularFrete(string $cepDestino, array $products): array
     {
         try {
-            $params = $this->prepararParametros($dados);
+            // Calcular dimensões totais do carrinho
+            $dimensions = $this->calcularDimensoesCarrinho($products);
             
-            $response = Http::timeout(30)->get($this->baseUrl, $params);
-            
-            if ($response->successful()) {
-                return $this->processarResposta($response->body());
+            // Preparar dados para os Correios
+            $dadosCorreios = [
+                'cep_origem' => $this->cepOrigem,
+                'cep_destino' => $cepDestino,
+                'peso' => $dimensions['peso'],
+                'comprimento' => $dimensions['comprimento'],
+                'largura' => $dimensions['largura'],
+                'altura' => $dimensions['altura'],
+                'valor_declarado' => $this->calcularValorTotal($products)
+            ];
+
+            // Calcular frete para cada serviço
+            $servicos = $this->getServicosDisponiveis();
+            $opcoesFrete = [];
+
+            foreach ($servicos as $codigo => $servico) {
+                $dadosCorreios['servico'] = $codigo;
+                $resultado = $this->chamarAPICorreios($dadosCorreios);
+
+                if (!empty($resultado) && !$resultado[0]['erro']) {
+                    $opcoesFrete[] = [
+                        'codigo' => $codigo,
+                        'nome' => $servico['nome'],
+                        'descricao' => $servico['descricao'],
+                        'prazo_estimado' => $servico['prazo_estimado'],
+                        'valor' => $resultado[0]['valor'],
+                        'prazo' => $resultado[0]['prazo'],
+                        'mensagem' => $resultado[0]['mensagem']
+                    ];
+                }
             }
-            
-            throw new \Exception('Erro na comunicação com os Correios');
-            
+
+            return [
+                'success' => true,
+                'opcoes' => $opcoesFrete,
+                'cep_destino' => $cepDestino,
+                'dimensions' => $dimensions
+            ];
+
         } catch (\Exception $e) {
-            Log::error('Erro ao calcular frete dos Correios: ' . $e->getMessage());
-            return $this->getFreteFallback($dados);
+            Log::error('Erro ao calcular frete: ' . $e->getMessage());
+            return $this->getFreteFallback($products, $cepDestino);
         }
     }
 
     /**
-     * Prepara os parâmetros para a requisição
+     * Calcula as dimensões totais do carrinho
      */
-    private function prepararParametros(array $dados)
+    public function calcularDimensoesCarrinho(array $products): array
     {
+        $pesoTotal = 0;
+        $volumeTotal = 0;
+        $maiorDimensao = 0;
+
+        foreach ($products as $product) {
+            $peso = $product['peso'] ?? 0.3;
+            $comprimento = $product['comprimento'] ?? 20;
+            $largura = $product['largura'] ?? 15;
+            $altura = $product['altura'] ?? 5;
+            $quantidade = $product['quantidade'] ?? 1;
+
+            $pesoTotal += $peso * $quantidade;
+            $volumeTotal += ($comprimento * $largura * $altura) * $quantidade;
+            
+            $maiorDimensao = max($maiorDimensao, $comprimento, $largura, $altura);
+        }
+
+        // Cálculo das dimensões da caixa
+        $dimensoes = $this->calcularDimensoesCaixa($volumeTotal, $maiorDimensao);
+
         return [
+            'peso' => max($pesoTotal, 0.3), // Mínimo 300g
+            'comprimento' => $dimensoes['comprimento'],
+            'largura' => $dimensoes['largura'],
+            'altura' => $dimensoes['altura']
+        ];
+    }
+
+    /**
+     * Calcula as dimensões da caixa baseado no volume
+     */
+    private function calcularDimensoesCaixa(float $volume, float $maiorDimensao): array
+    {
+        // Dimensões padrão para diferentes volumes
+        if ($volume <= 1000) { // Até 1L
+            return ['comprimento' => 20, 'largura' => 15, 'altura' => 5];
+        } elseif ($volume <= 5000) { // Até 5L
+            return ['comprimento' => 30, 'largura' => 20, 'altura' => 10];
+        } elseif ($volume <= 15000) { // Até 15L
+            return ['comprimento' => 40, 'largura' => 30, 'altura' => 15];
+        } else {
+            // Para volumes maiores, usar a maior dimensão como base
+            $base = max($maiorDimensao, 20);
+            return [
+                'comprimento' => $base,
+                'largura' => $base * 0.8,
+                'altura' => $base * 0.5
+            ];
+        }
+    }
+
+    /**
+     * Calcula o valor total dos itens
+     */
+    private function calcularValorTotal(array $products): float
+    {
+        $total = 0;
+        foreach ($products as $product) {
+            $total += $product['price'] * ($product['quantidade'] ?? 1);
+        }
+        return $total;
+    }
+
+    /**
+     * Chama a API dos Correios
+     */
+    private function chamarAPICorreios(array $dados): array
+    {
+        $params = [
             'nCdEmpresa' => $this->codigoEmpresa,
             'sDsSenha' => $this->senha,
-            'nCdServico' => $dados['servico'], // 04014 = SEDEX, 04510 = PAC
+            'nCdServico' => $dados['servico'],
             'sCepOrigem' => $dados['cep_origem'],
             'sCepDestino' => $dados['cep_destino'],
             'nVlPeso' => $dados['peso'],
@@ -57,16 +159,24 @@ class CorreiosService
             'nVlLargura' => $dados['largura'],
             'nVlDiametro' => 0,
             'sCdMaoPropria' => 'N',
-            'nVlValorDeclarado' => $dados['valor_declarado'] ?? 0,
+            'nVlValorDeclarado' => $dados['valor_declarado'],
             'sCdAvisoRecebimento' => 'N',
             'StrRetorno' => 'xml'
         ];
+
+        $response = Http::timeout(30)->get($this->baseUrl, $params);
+        
+        if ($response->successful()) {
+            return $this->processarRespostaCorreios($response->body());
+        }
+        
+        throw new \Exception('Erro na comunicação com os Correios');
     }
 
     /**
      * Processa a resposta XML dos Correios
      */
-    private function processarResposta(string $xml)
+    private function processarRespostaCorreios(string $xml): array
     {
         $xml = simplexml_load_string($xml);
         
@@ -104,85 +214,41 @@ class CorreiosService
     /**
      * Retorna frete fallback em caso de erro
      */
-    private function getFreteFallback(array $dados)
+    private function getFreteFallback(array $products, string $cepDestino): array
     {
+        $totalValue = $this->calcularValorTotal($products);
+        
         return [
-            [
-                'codigo' => '04014',
-                'valor' => 15.00,
-                'prazo' => 3,
-                'erro' => false,
-                'mensagem' => 'Frete estimado (serviço temporariamente indisponível)'
+            'success' => true,
+            'opcoes' => [
+                [
+                    'codigo' => '04014',
+                    'nome' => 'SEDEX',
+                    'descricao' => 'Entrega expressa',
+                    'prazo_estimado' => '1-3 dias úteis',
+                    'valor' => min(15.00 + ($totalValue * 0.02), 50.00),
+                    'prazo' => 3,
+                    'mensagem' => 'Frete estimado (serviço temporariamente indisponível)'
+                ],
+                [
+                    'codigo' => '04510',
+                    'nome' => 'PAC',
+                    'descricao' => 'Encomenda econômica',
+                    'prazo_estimado' => '3-7 dias úteis',
+                    'valor' => min(10.00 + ($totalValue * 0.015), 35.00),
+                    'prazo' => 5,
+                    'mensagem' => 'Frete estimado (serviço temporariamente indisponível)'
+                ]
             ],
-            [
-                'codigo' => '04510',
-                'valor' => 10.00,
-                'prazo' => 5,
-                'erro' => false,
-                'mensagem' => 'Frete estimado (serviço temporariamente indisponível)'
-            ]
+            'cep_destino' => $cepDestino,
+            'dimensions' => $this->calcularDimensoesCarrinho($products)
         ];
-    }
-
-    /**
-     * Calcula dimensões e peso do carrinho
-     */
-    public function calcularDimensoesCarrinho(array $itens)
-    {
-        $pesoTotal = 0;
-        $volumeTotal = 0;
-        $maiorDimensao = 0;
-
-        foreach ($itens as $item) {
-            $peso = $item['peso'] ?? 0.3; // Peso padrão em kg
-            $comprimento = $item['comprimento'] ?? 20; // cm
-            $largura = $item['largura'] ?? 15; // cm
-            $altura = $item['altura'] ?? 5; // cm
-
-            $pesoTotal += $peso * $item['quantity'];
-            $volumeTotal += ($comprimento * $largura * $altura) * $item['quantity'];
-            
-            $maiorDimensao = max($maiorDimensao, $comprimento, $largura, $altura);
-        }
-
-        // Cálculo das dimensões da caixa
-        $dimensoes = $this->calcularDimensoesCaixa($volumeTotal, $maiorDimensao);
-
-        return [
-            'peso' => max($pesoTotal, 0.3), // Mínimo 300g
-            'comprimento' => $dimensoes['comprimento'],
-            'largura' => $dimensoes['largura'],
-            'altura' => $dimensoes['altura']
-        ];
-    }
-
-    /**
-     * Calcula as dimensões da caixa baseado no volume
-     */
-    private function calcularDimensoesCaixa(float $volume, float $maiorDimensao)
-    {
-        // Dimensões padrão para diferentes volumes
-        if ($volume <= 1000) { // Até 1L
-            return ['comprimento' => 20, 'largura' => 15, 'altura' => 5];
-        } elseif ($volume <= 5000) { // Até 5L
-            return ['comprimento' => 30, 'largura' => 20, 'altura' => 10];
-        } elseif ($volume <= 15000) { // Até 15L
-            return ['comprimento' => 40, 'largura' => 30, 'altura' => 15];
-        } else {
-            // Para volumes maiores, usar a maior dimensão como base
-            $base = max($maiorDimensao, 20);
-            return [
-                'comprimento' => $base,
-                'largura' => $base * 0.8,
-                'altura' => $base * 0.5
-            ];
-        }
     }
 
     /**
      * Obtém os serviços disponíveis
      */
-    public function getServicosDisponiveis()
+    public function getServicosDisponiveis(): array
     {
         return [
             '04014' => [
@@ -196,5 +262,67 @@ class CorreiosService
                 'prazo_estimado' => '3-7 dias úteis'
             ]
         ];
+    }
+
+    /**
+     * Valida CEP
+     */
+    public function validarCep(string $cep): bool
+    {
+        $cep = preg_replace('/[^0-9]/', '', $cep);
+        return strlen($cep) === 8;
+    }
+
+    /**
+     * Formata CEP
+     */
+    public function formatarCep(string $cep): string
+    {
+        $cep = preg_replace('/[^0-9]/', '', $cep);
+        if (strlen($cep) === 8) {
+            return substr($cep, 0, 5) . '-' . substr($cep, 5, 3);
+        }
+        return $cep;
+    }
+
+    /**
+     * Consulta CEP via ViaCEP
+     */
+    public function consultarCep(string $cep): ?array
+    {
+        $cep = preg_replace('/[^0-9]/', '', $cep);
+        
+        if (strlen($cep) !== 8) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(10)->get("https://viacep.com.br/ws/{$cep}/json/");
+            
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                if (isset($data['erro'])) {
+                    return null;
+                }
+                
+                return [
+                    'cep' => $data['cep'],
+                    'logradouro' => $data['logradouro'],
+                    'complemento' => $data['complemento'],
+                    'bairro' => $data['bairro'],
+                    'localidade' => $data['localidade'],
+                    'uf' => $data['uf'],
+                    'ibge' => $data['ibge'],
+                    'gia' => $data['gia'],
+                    'ddd' => $data['ddd'],
+                    'siafi' => $data['siafi']
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro ao consultar CEP: ' . $e->getMessage());
+        }
+        
+        return null;
     }
 }

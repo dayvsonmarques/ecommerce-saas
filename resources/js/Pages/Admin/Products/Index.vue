@@ -11,7 +11,7 @@
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <Link
-            :href="route('admin.products.create')"
+            href="/admin/products/create"
             class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
           >
             Adicionar Produto
@@ -141,16 +141,22 @@
           </div>
           <div>
             <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <Link
-                v-for="link in products.links"
-                :key="link.label"
-                :href="link.url"
-                v-html="link.label"
-                :class="[
-                  link.active ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
-                  'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
-                ]"
-              />
+              <template v-for="link in products.links" :key="link.label">
+                <Link
+                  v-if="link.url"
+                  :href="link.url"
+                  v-html="link.label"
+                  :class="[
+                    link.active ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
+                    'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
+                  ]"
+                />
+                <span
+                  v-else
+                  v-html="link.label"
+                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500"
+                />
+              </template>
             </nav>
           </div>
         </div>
@@ -161,6 +167,7 @@
 
 <script setup>
 import { Link, router } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
 import { reactive } from 'vue'
 import AdminLayout from '../Layout.vue'
 
@@ -177,7 +184,7 @@ const form = reactive({
 })
 
 const submitFilters = () => {
-  router.get(route('admin.products.index'), {
+  router.get('/admin/products', {
     name: form.name || undefined,
     category_id: form.category_id || undefined,
     is_active: form.is_active !== '' ? form.is_active : undefined,
@@ -203,12 +210,12 @@ const onImgError = (e, product) => {
 }
 
 const editProduct = (id) => {
-  router.visit(route('admin.products.edit', id))
+  router.visit(`/admin/products/${id}/edit`)
 }
 
 const deleteProduct = (id) => {
   if (confirm('Tem certeza que deseja excluir este produto?')) {
-    router.delete(route('admin.products.destroy', id))
+    router.delete(`/admin/products/${id}`)
   }
 }
 </script>

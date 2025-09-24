@@ -108,6 +108,27 @@
         </div>
       </div>
 
+      <!-- Charts -->
+      <div v-if="stats && stats.charts" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <!-- Orders by Month (Yearly) -->
+        <div class="bg-white shadow rounded-lg p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Pedidos por mês ({{ stats.charts.year }})</h3>
+          <BarChart :data="stats.charts.ordersByMonth" />
+        </div>
+
+        <!-- Customers by Month (Yearly) -->
+        <div class="bg-white shadow rounded-lg p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Clientes registrados por mês ({{ stats.charts.year }})</h3>
+          <BarChart :data="stats.charts.customersByMonth" color="#10b981" />
+        </div>
+
+        <!-- Customers by Region (Brazil) -->
+        <div class="bg-white shadow rounded-lg p-6 lg:col-span-2">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Clientes por região (Brasil)</h3>
+          <RegionBars :regions="stats.charts.customersByRegion" />
+        </div>
+      </div>
+
       <!-- Recent Orders -->
       <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
@@ -149,6 +170,9 @@
 
 <script setup>
 import AdminLayout from './Layout.vue'
+import { computed, defineComponent } from 'vue'
+
+const monthLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 defineProps({
   stats: Object
@@ -175,4 +199,47 @@ const getStatusText = (status) => {
   }
   return texts[status] || status
 }
+
+// Simple bar chart component (SVG-based, no external deps)
+const BarChart = defineComponent({
+  props: { data: Array, color: { type: String, default: '#6366f1' } },
+  setup(props){
+    const max = computed(() => Math.max(1, ...(props.data || [0])))
+    return { max }
+  },
+  template: `
+    <div class="w-full overflow-x-auto">
+      <svg :width="600" height="180" viewBox="0 0 600 180" class="min-w-full">
+        <g>
+          <text v-for="(m, i) in 12" :key="'lbl-'+i" :x="i*48 + 24" y="170" text-anchor="middle" class="fill-gray-500 text-[10px]">{{ ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][i] }}</text>
+          <rect v-for="(v,i) in (data || [])" :key="i" :x="i*48 + 12" :y="150 - (v/max)*130" width="24" :height="(v/max)*130" :fill="color" rx="4" />
+        </g>
+      </svg>
+    </div>
+  `
+})
+
+// Region bars (N, NE, CO, SE, S)
+const RegionBars = defineComponent({
+  props: { regions: Object },
+  setup(props){
+    const entries = computed(() => Object.entries(props.regions || {}))
+    const max = computed(() => Math.max(1, ...entries.value.map(([,v]) => v)))
+    const labels = { N: 'Norte', NE: 'Nordeste', CO: 'Centro-Oeste', SE: 'Sudeste', S: 'Sul' }
+    return { entries, max, labels }
+  },
+  template: `
+    <div class="space-y-3">
+      <div v-for="([k,v]) in entries" :key="k">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-sm text-gray-600">{{ labels[k] || k }}</span>
+          <span class="text-sm font-medium text-gray-900">{{ v }}</span>
+        </div>
+        <div class="h-3 bg-gray-100 rounded">
+          <div class="h-3 bg-indigo-500 rounded" :style="{ width: ((v/max)*100)+'%' }"></div>
+        </div>
+      </div>
+    </div>
+  `
+})
 </script>

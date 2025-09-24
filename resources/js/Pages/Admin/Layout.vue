@@ -72,6 +72,19 @@
                       <span>Grupos de usuários</span>
                     </Link>
                   </li>
+                  <li class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span class="px-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Configurações</span>
+                  </li>
+                  <li>
+                    <Link href="/admin/settings/correios" :class="navClass(currentUrl.startsWith('/admin/settings/correios'))" @click="sidebarOpen = false">
+                      <span>Correios</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/admin/settings/mercadopago" :class="navClass(currentUrl.startsWith('/admin/settings/mercadopago'))" @click="sidebarOpen = false">
+                      <span>Mercado Pago</span>
+                    </Link>
+                  </li>
                 </ul>
               </nav>
             </div>
@@ -136,6 +149,19 @@
               <li>
                 <Link :href="route('admin.groups.index')" :class="navClass(currentUrl.startsWith('/admin/groups'))">
                   <span>Grupos de usuários</span>
+                </Link>
+              </li>
+              <li class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <span class="px-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Configurações</span>
+              </li>
+              <li>
+                <Link href="/admin/settings/correios" :class="navClass(currentUrl.startsWith('/admin/settings/correios'))">
+                  <span>Correios</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/admin/settings/mercadopago" :class="navClass(currentUrl.startsWith('/admin/settings/mercadopago'))">
+                  <span>Mercado Pago</span>
                 </Link>
               </li>
             </ul>
@@ -204,6 +230,7 @@
 
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
 import { ref, onMounted, watch, computed } from 'vue'
 
 const sidebarOpen = ref(false)

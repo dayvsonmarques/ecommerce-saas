@@ -19,7 +19,17 @@ class Product extends Model
         'peso',
         'comprimento',
         'largura',
-        'altura'
+        'altura',
+        'sku',
+        'marca',
+        'material',
+        'tamanhos',
+        'cores',
+        'estoque_minimo',
+        'controlar_estoque',
+        'meta_titulo',
+        'meta_descricao',
+        'tags'
     ];
 
     protected $casts = [
@@ -28,7 +38,11 @@ class Product extends Model
         'peso' => 'decimal:3',
         'comprimento' => 'decimal:2',
         'largura' => 'decimal:2',
-        'altura' => 'decimal:2'
+        'altura' => 'decimal:2',
+        'tamanhos' => 'array',
+        'cores' => 'array',
+        'controlar_estoque' => 'boolean',
+        'tags' => 'array'
     ];
 
     public function category(): BelongsTo

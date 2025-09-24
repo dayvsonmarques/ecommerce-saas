@@ -41,7 +41,8 @@ class ShippingController extends Controller
                     $itens[] = [
                         'id' => $product->id,
                         'name' => $product->name,
-                        'quantity' => $item['quantity'],
+                        'price' => $product->price,
+                        'quantidade' => $item['quantity'],
                         'peso' => $product->peso ?? 0.3,
                         'comprimento' => $product->comprimento ?? 20,
                         'largura' => $product->largura ?? 15,
@@ -50,46 +51,17 @@ class ShippingController extends Controller
                 }
             }
 
-            // Calcular dimensões do carrinho
-            $dimensoes = $this->correiosService->calcularDimensoesCarrinho($itens);
-
-            // Preparar dados para os Correios
-            $dadosCorreios = [
-                'cep_origem' => config('services.correios.cep_origem'),
-                'cep_destino' => $request->cep_destino,
-                'peso' => $dimensoes['peso'],
-                'comprimento' => $dimensoes['comprimento'],
-                'largura' => $dimensoes['largura'],
-                'altura' => $dimensoes['altura'],
-                'valor_declarado' => $this->calcularValorTotal($itens)
-            ];
-
-            // Calcular frete para cada serviço
-            $servicos = $this->correiosService->getServicosDisponiveis();
-            $opcoesFrete = [];
-
-            foreach ($servicos as $codigo => $servico) {
-                $dadosCorreios['servico'] = $codigo;
-                $resultado = $this->correiosService->calcularFrete($dadosCorreios);
-
-                if (!empty($resultado) && !$resultado[0]['erro']) {
-                    $opcoesFrete[] = [
-                        'codigo' => $codigo,
-                        'nome' => $servico['nome'],
-                        'descricao' => $servico['descricao'],
-                        'prazo_estimado' => $servico['prazo_estimado'],
-                        'valor' => $resultado[0]['valor'],
-                        'prazo' => $resultado[0]['prazo'],
-                        'mensagem' => $resultado[0]['mensagem']
-                    ];
-                }
+            if (empty($itens)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Nenhum produto válido encontrado'
+                ], 400);
             }
 
-            return response()->json([
-                'success' => true,
-                'opcoes' => $opcoesFrete,
-                'cep_destino' => $request->cep_destino
-            ]);
+            // Calcular frete usando o CorreiosService
+            $resultado = $this->correiosService->calcularFrete($request->cep_destino, $itens);
+
+            return response()->json($resultado);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -97,21 +69,6 @@ class ShippingController extends Controller
                 'error' => 'Erro ao calcular frete: ' . $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Calcula o valor total dos itens
-     */
-    private function calcularValorTotal(array $itens): float
-    {
-        $total = 0;
-        foreach ($itens as $item) {
-            $product = \App\Models\Product::find($item['id']);
-            if ($product) {
-                $total += $product->price * $item['quantity'];
-            }
-        }
-        return $total;
     }
 
     /**
@@ -125,19 +82,21 @@ class ShippingController extends Controller
 
         $cep = preg_replace('/[^0-9]/', '', $request->cep);
         
-        if (strlen($cep) !== 8) {
+        if (!$this->correiosService->validarCep($cep)) {
             return response()->json([
                 'success' => false,
                 'error' => 'CEP inválido'
             ], 400);
         }
 
-        // Aqui você pode integrar com uma API de CEP como ViaCEP
-        // Por enquanto, vamos apenas validar o formato
+        // Consultar CEP via ViaCEP
+        $endereco = $this->correiosService->consultarCep($cep);
+        
         return response()->json([
             'success' => true,
-            'cep' => $request->cep,
-            'valido' => true
+            'cep' => $this->correiosService->formatarCep($cep),
+            'valido' => true,
+            'endereco' => $endereco
         ]);
     }
 }
