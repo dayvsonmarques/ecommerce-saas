@@ -25,7 +25,14 @@ class CheckoutController extends Controller
         $cart->load('items.product');
 
         return Inertia::render('Store/Checkout/Index', [
-            'cart' => $cart,
+            'cartItems' => $cart->items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'product' => $item->product,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price
+                ];
+            })
         ]);
     }
 
@@ -46,8 +53,10 @@ class CheckoutController extends Controller
             'billing_address.state' => 'required|string|max:255',
             'billing_address.zip' => 'required|string|max:10',
             'billing_address.country' => 'required|string|max:255',
-            'payment_method' => 'required|string|in:credit_card,debit_card,pix,boleto',
+            'payment_method' => 'required|string|in:credit_card,debit_card,pix,boleto,mercadopago',
             'notes' => 'nullable|string|max:1000',
+            'shipping_cost' => 'nullable|numeric|min:0',
+            'shipping_method' => 'nullable|string|max:255',
         ]);
 
         $cart = $this->getCart();
@@ -59,12 +68,16 @@ class CheckoutController extends Controller
         try {
             DB::beginTransaction();
 
+            // Calculate total with shipping
+            $shippingCost = $request->shipping_cost ?? 0;
+            $totalAmount = $cart->total_amount + $shippingCost;
+
             // Create order
             $order = Order::create([
                 'user_id' => Auth::id(),
                 'customer_id' => null, // For now, we'll use user_id
                 'status' => 'pending',
-                'total_amount' => $cart->total_amount,
+                'total_amount' => $totalAmount,
                 'shipping_address' => $request->shipping_address,
                 'billing_address' => $request->billing_address,
                 'payment_method' => $request->payment_method,
@@ -87,6 +100,14 @@ class CheckoutController extends Controller
 
             DB::commit();
 
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'order' => $order,
+                    'message' => 'Pedido criado com sucesso!'
+                ]);
+            }
+
             return redirect()->route('store.checkout.success', $order->id)
                 ->with('success', 'Pedido realizado com sucesso!');
 
@@ -107,6 +128,16 @@ class CheckoutController extends Controller
         return Inertia::render('Store/Checkout/Success', [
             'order' => $order,
         ]);
+    }
+
+    public function failure()
+    {
+        return Inertia::render('Store/Checkout/Failure');
+    }
+
+    public function pending()
+    {
+        return Inertia::render('Store/Checkout/Pending');
     }
 
     private function getCart()

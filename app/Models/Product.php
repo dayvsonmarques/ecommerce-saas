@@ -15,12 +15,20 @@ class Product extends Model
         'price',
         'stock',
         'category_id',
-        'is_active'
+        'is_active',
+        'peso',
+        'comprimento',
+        'largura',
+        'altura'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'peso' => 'decimal:3',
+        'comprimento' => 'decimal:2',
+        'largura' => 'decimal:2',
+        'altura' => 'decimal:2'
     ];
 
     public function category(): BelongsTo

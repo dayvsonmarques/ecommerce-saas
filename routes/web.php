@@ -59,6 +59,17 @@ Route::prefix('store')->name('store.')->group(function () {
     Route::get('/checkout', [App\Http\Controllers\Store\CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [App\Http\Controllers\Store\CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/checkout/success/{order}', [App\Http\Controllers\Store\CheckoutController::class, 'success'])->name('checkout.success');
+    Route::get('/checkout/failure', [App\Http\Controllers\Store\CheckoutController::class, 'failure'])->name('checkout.failure');
+    Route::get('/checkout/pending', [App\Http\Controllers\Store\CheckoutController::class, 'pending'])->name('checkout.pending');
+    
+    // Shipping routes
+    Route::post('/shipping/calculate', [App\Http\Controllers\Store\ShippingController::class, 'calcularFrete'])->name('shipping.calculate');
+    Route::post('/shipping/validate-cep', [App\Http\Controllers\Store\ShippingController::class, 'validarCep'])->name('shipping.validate-cep');
+    
+    // Payment routes
+    Route::post('/payment/create-preference', [App\Http\Controllers\Store\PaymentController::class, 'criarPreferencia'])->name('payment.create-preference');
+    Route::post('/payment/verify-status', [App\Http\Controllers\Store\PaymentController::class, 'verificarStatus'])->name('payment.verify-status');
+    Route::get('/payment/methods', [App\Http\Controllers\Store\PaymentController::class, 'getMetodosPagamento'])->name('payment.methods');
     
     // Customer Area (requires authentication)
     Route::middleware('auth')->group(function () {
@@ -69,5 +80,8 @@ Route::prefix('store')->name('store.')->group(function () {
         Route::put('/customer/profile', [App\Http\Controllers\Store\CustomerController::class, 'updateProfile'])->name('customer.profile.update');
     });
 });
+
+// Webhook routes (outside store group)
+Route::post('/mercadopago/webhook', [App\Http\Controllers\Store\PaymentController::class, 'webhook'])->name('mercadopago.webhook');
 
 require __DIR__.'/auth.php';
